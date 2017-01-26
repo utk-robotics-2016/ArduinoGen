@@ -1,0 +1,1 @@
+[{"label":"stage2_limit_switch","type":"Limit Switch","pin":12,"pullup":false,"invert":false},{"label":"stage2_servo","type":"Servo","pin":11,"servo_type":"Vex"}]

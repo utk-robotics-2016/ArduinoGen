@@ -142,7 +142,12 @@ class Generator:
         rv += "\tcmdMessenger.sendBinCmd(kAcknowledge, kSetLed);\n"
         rv += "}\n\n"
         for appendage in self.appendage_dict.values():
-            rv += appendage.get_command_functions()
+            cmd_func = appendage.get_command_functions()
+            if cmd_func is not None:
+                rv += str(cmd_func)
+            else:
+                # TODO this was an error but idk where to log it
+                pass
         return rv
 
     def add_extra_functions(self):
