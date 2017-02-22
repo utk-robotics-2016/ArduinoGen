@@ -86,7 +86,7 @@ class Generator:
                 if not appendage.TIER:
                     logger.error("Appendage missing TIER value: " + str(appendage))
                 if appendage.TIER == i:
-                    constructor = appendage.get_constructors()
+                    constructor = appendage.get_constructor()
                     if not constructor == "":
                         rv += constructor + "\n"
                 else:

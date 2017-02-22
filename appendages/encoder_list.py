@@ -13,37 +13,45 @@ class EncoderList(ComponentList):
     TIER = 1
 
     def __init__(self):
-        self.list_ = []
+        self.encoderDict = {}
+        self.encoderList = []
 
-    def add(self, json_item, device_dict, device_type):
+    def add(self, json_item):
         encoder = Encoder(json_item['label'], json_item['pin_a'], json_item['pin_b'], json_item['ticks_per_rev'])
-        self.list_.append(encoder)
-        return encoder
+        self.encoderDict[json_item['label']] = encoder
+        self.encoderList.append(encoder)
+        self.encoderList.sort(key=lambda x: x.label, reverse=False)
+
+    def get(self, label):
+        if label in self.encoderDict:
+            return self.encoderDict[label]
+        else:
+            return None
 
     def get_includes(self):
         return '#include "Encoder.h"\n'
 
     def get_pins(self):
         rv = ""
-        for encoder in self.list_:
+        for encoder in self.encoderList:
             rv += "const char {0:s}_pin_a = {1:d};\n".format(encoder.label, encoder.pin_a)
             rv += "const char {0:s}_pin_b = {1:d};\n".format(encoder.label, encoder.pin_b)
         rv += "\n"
         return rv
 
-    def get_constructors(self):
+    def get_constructor(self):
         rv = ""
-        for i, encoder in enumerate(self.list_):
+        for i, encoder in enumerate(self.encoderList):
             rv += "const char {0:s}_index = {1:d};\n".format(encoder.label, i)
-        rv += "Encoder encoders[{0:d}] = {{\n".format(len(self.list_))
-        for encoder in self.list_:
+        rv += "Encoder encoders[{0:d}] = {{\n".format(len(self.encoderList))
+        for encoder in self.encoderList:
             rv += "\tEncoder({0:s}_pin_a, {0:s}_pin_b),\n".format(encoder.label)
         rv = rv[:-2] + "\n};\n"
         return rv
 
     def get_setup(self):
         rv = ""
-        for encoder in self.list_:
+        for encoder in self.encoderList:
             rv += "\tpinMode({0:s}_pin_a, INPUT);\n".format(encoder.label)
             rv += "\tpinMode({0:s}_pin_b, INPUT);\n".format(encoder.label)
         return rv
@@ -59,7 +67,7 @@ class EncoderList(ComponentList):
     def get_command_functions(self):
         rv = "void readEncoder() {\n"
         rv += "\tint indexNum = cmdMessenger.readBinArg<int>();\n"
-        rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.list_))
+        rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.encoderList))
         rv += "\t\tcmdMessenger.sendBinCmd(kError, kReadEncoder);\n"
         rv += "\t\treturn;\n"
         rv += "\t}\n"
@@ -69,7 +77,7 @@ class EncoderList(ComponentList):
 
         rv += "void zeroEncoder() {\n"
         rv += "\tint indexNum = cmdMessenger.readBinArg<int>();\n"
-        rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.list_))
+        rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.encoderList))
         rv += "\t\tcmdMessenger.sendBinCmd(kError, kZeroEncoder);\n"
         rv += "\t\treturn;\n"
         rv += "\t}\n"
@@ -79,11 +87,11 @@ class EncoderList(ComponentList):
         return rv
 
     def get_indices(self):
-        for i, encoder in enumerate(self.list_):
+        for i, encoder in enumerate(self.encoderList):
             yield i, encoder
 
     def get_core_values(self):
-        for i, encoder in enumerate(self.list_):
+        for i, encoder in enumerate(self.encoderList):
             a = {}
             a['index'] = i
             a['label'] = encoder.label

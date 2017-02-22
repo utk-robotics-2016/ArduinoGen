@@ -12,33 +12,40 @@ class I2CEncoderList(ComponentList):
     TIER = 1
 
     def __init__(self):
-        self.list_ = []
+        self.sensors = dict()
+        self.sorted_sensors = []
 
-    def add(self, json_item, device_dict, device_type):
+    def add(self, json_item):
         sensor = I2CEncoder(json_item['label'], json_item['reverse'], json_item['init_number'])
-        self.list_.append(sensor)
-        self.list_.sort(key=lambda x: x.init_number, reverse=False)
-        return sensor
+        self.sensors[json_item['label']] = sensor
+        self.sorted_sensors.append(sensor)
+        self.sorted_sensors.sort(key=lambda x: x.init_number, reverse=False)
+
+    def get(self, label):
+        if label in self.sensors:
+            return self.sensors[label]
+        else:
+            return None
 
     def get_includes(self):
         return '#include <Wire.h>\n#include "I2CEncoder.h"\n'
 
-    def get_constructors(self):
+    def get_constructor(self):
         rv = ""
-        for i in range(len(self.list_)):
-            rv += "const char {0:s}_index = {1:d};\n".format(self.list_[i].label, i)
-        rv += "I2CEncoder i2cencoders[{0:d}];\n".format(len(self.list_))
+        for i in range(len(self.sorted_sensors)):
+            rv += "const char {0:s}_index = {1:d};\n".format(self.sorted_sensors[i].label, i)
+        rv += "I2CEncoder i2cencoders[{0:d}];\n".format(len(self.sorted_sensors))
         return rv
 
     def get_setup(self):
         rv = "\tWire.begin();\n"
-        for sensor in self.list_:
+        for sensor in self.sorted_sensors:
             rv += ("\ti2cencoders[{0:s}_index].init(MOTOR_393_TORQUE_ROTATIONS, " +
                    "MOTOR_393_TIME_DELTA);\n").format(sensor.label)
-        for sensor in self.list_:
+        for sensor in self.sorted_sensors:
             if sensor.reverse:
                 rv += "\ti2cencoders[{0:s}_index].setReversed(true);\n".format(sensor.label)
-        for sensor in self.list_:
+        for sensor in self.sorted_sensors:
             rv += "\ti2cencoders[{0:s}_index].zero();\n".format(sensor.label)
         rv += "\n"
         return rv
@@ -66,7 +73,7 @@ class I2CEncoderList(ComponentList):
     def get_command_functions(self):
         rv = "void i2cEncoderPosition() {\n"
         rv += "\tint indexNum = cmdMessenger.readBinArg<int>();\n"
-        rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.list_))
+        rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.sorted_sensors))
         rv += "\t\tcmdMessenger.sendBinCmd(kError, kI2CEncoderPosition);\n"
         rv += "\t\treturn;\n"
         rv += "\t}\n"
@@ -76,7 +83,7 @@ class I2CEncoderList(ComponentList):
 
         rv += "void i2cEncoderRawPosition() {\n"
         rv += "\tint indexNum = cmdMessenger.readBinArg<int>();\n"
-        rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.list_))
+        rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.sorted_sensors))
         rv += "\t\tcmdMessenger.sendBinCmd(kError, kI2CEncoderRawPosition);\n"
         rv += "\t\treturn;\n"
         rv += "\t}\n"
@@ -86,7 +93,7 @@ class I2CEncoderList(ComponentList):
 
         rv += "void i2cEncoderSpeed() {\n"
         rv += "\tint indexNum = cmdMessenger.readBinArg<int>();\n"
-        rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.list_))
+        rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.sorted_sensors))
         rv += "\t\tcmdMessenger.sendBinCmd(kError, kI2CEncoderSpeed);\n"
         rv += "\t\treturn;\n"
         rv += "\t}\n"
@@ -96,7 +103,7 @@ class I2CEncoderList(ComponentList):
 
         rv += "void i2cEncoderVelocity() {\n"
         rv += "\tint indexNum = cmdMessenger.readBinArg<int>();\n"
-        rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.list_))
+        rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.sorted_sensors))
         rv += "\t\tcmdMessenger.sendBinCmd(kError, kI2CEncoderVelocity);\n"
         rv += "\t\treturn;\n"
         rv += "\t}\n"
@@ -106,7 +113,7 @@ class I2CEncoderList(ComponentList):
 
         rv += "void i2cEncoderZero() {\n"
         rv += "\tint indexNum = cmdMessenger.readBinArg<int>();\n"
-        rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.list_))
+        rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.sorted_sensors))
         rv += "\t\tcmdMessenger.sendBinCmd(kError, kI2CEncoderZero);\n"
         rv += "\t\treturn;\n"
         rv += "\t}\n"
@@ -117,7 +124,7 @@ class I2CEncoderList(ComponentList):
         return rv
 
     def get_core_values(self):
-        for i, encoder in enumerate(self.list_):
+        for i, encoder in enumerate(self.sorted_sensors):
             a = {}
             a['index'] = i
             a['label'] = encoder.label

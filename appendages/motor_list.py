@@ -16,9 +16,10 @@ class MotorList(ComponentList):
     TIER = 1
 
     def __init__(self):
-        self.list_ = []
+        self.motorDict = {}
+        self.motorList = []
 
-    def add(self, json_item, device_dict, device_type):
+    def add(self, json_item):
         if json_item['motor_controller'].lower() == 'monster moto':
             motor = Motor(json_item['label'], json_item['dir_pin_a'], json_item['dir_pin_b'],
                           json_item['pwm_pin'], json_item['reverse'], 'MonsterMoto', json_item['motor_type'])
@@ -31,26 +32,33 @@ class MotorList(ComponentList):
         elif json_item['motor_controller'].lower() == 'mosfet':
             motor = Motor(json_item['label'], json_item['dir_pin_a'], -1, -1, json_item['reverse'],
                           'Mosfet', json_item['motor_type'])
-        self.list_.append(motor)
-        return motor
+        self.motorDict[motor.label] = motor
+        self.motorList.append(motor)
+        self.motorList.sort(key=lambda x: x.label, reverse=False)
+
+    def get(self, label):
+        if label in self.motorDict:
+            return self.motorDict[label]
+        else:
+            return None
 
     def get_includes(self):
         return '#include "Motor.h"\n'
 
     def get_pins(self):
         rv = ""
-        for motor in self.list_:
+        for motor in self.motorList:
             rv += "const char {0:s}_dir_pin_a = {1:d};\n".format(motor.label, motor.dir_pin_a)
             rv += "const char {0:s}_dir_pin_b = {1:d};\n".format(motor.label, motor.dir_pin_b)
             rv += "const char {0:s}_pwm_pin = {1:d};\n".format(motor.label, motor.pwm_pin)
         return rv
 
-    def get_constructors(self):
+    def get_constructor(self):
         rv = ""
-        for i, motor in enumerate(self.list_):
+        for i, motor in enumerate(self.motorList):
             rv += "const char {0:s}_index = {1:d};\n".format(motor.label, i)
-        rv += "Motor motors[{0:d}] = {{\n".format(len(self.list_))
-        for motor in self.list_:
+        rv += "Motor motors[{0:d}] = {{\n".format(len(self.motorList))
+        for motor in self.motorList:
             rv += "\tMotor({0:s}_dir_pin_a, {0:s}_dir_pin_b, {0:s}_pwm_pin, {1:d}, {2:s}),\n"\
                     .format(motor.label, 1 if motor.reverse else 0,
                             motor.motor_controller)
@@ -59,7 +67,7 @@ class MotorList(ComponentList):
 
     def get_setup(self):
         rv = ""
-        for motor in self.list_:
+        for motor in self.motorList:
             rv += "\tpinMode({0:s}_dir_pin_a, OUTPUT);\n".format(motor.label)
             if not motor.dir_pin_b == -1:
                 rv += "\tpinMode({0:s}_dir_pin_b, OUTPUT);\n".format(motor.label)
@@ -77,7 +85,7 @@ class MotorList(ComponentList):
     def get_command_functions(self):
         rv = "void driveMotor() {\n"
         rv += "\tint indexNum = cmdMessenger.readBinArg<int>();\n"
-        rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.list_))
+        rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.motorList))
         rv += "\t\tcmdMessenger.sendBinCmd(kError, kDriveMotor);\n"
         rv += "\t\treturn;\n"
         rv += "\t}\n"
@@ -92,7 +100,7 @@ class MotorList(ComponentList):
 
         rv += "void stopMotor() {\n"
         rv += "\tint indexNum = cmdMessenger.readBinArg<int>();\n"
-        rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.list_))
+        rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.motorList))
         rv += "\t\tcmdMessenger.sendBinCmd(kError, kStopMotor);\n"
         rv += "\t\treturn;\n"
         rv += "\t}\n"
@@ -102,7 +110,7 @@ class MotorList(ComponentList):
         return rv
 
     def get_core_values(self):
-        for i, motor in enumerate(self.list_):
+        for i, motor in enumerate(self.motorList):
             a = {}
             a['index'] = i
             a['label'] = motor.label

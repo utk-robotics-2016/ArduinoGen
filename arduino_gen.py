@@ -43,8 +43,8 @@ class ArduinoGen:
             os.chmod("{0:s}/{1:s}.json".format(self.folder, self.arduino), 0o777)
 
         logger.info("Reading config file...")
-        with open(f) as fi:
-            file_text = fi.read()
+        fi = open(f)
+        file_text = fi.read()
         json_data = json.loads(file_text)
 
         # Split into levels based on dependencies
@@ -80,7 +80,22 @@ class ArduinoGen:
                 if not json_item['type'] in self.device_dict:
                     self.device_dict[json_item['type']] = device_level[json_item['type']]
 
-                self.device_dict[json_item['type']].add(json_item, self.device_dict, device_type)
+                if json_item['type'] == 'arm':
+                    self.device_dict[json_item['type']].add(json_item, self.device_dict['servo'])
+                elif json_item['type'] == 'velocity_controlled_motor':
+                    self.device_dict[json_item['type']].add(json_item, self.device_dict['motor'],
+                                                            self.device_dict['i2c_encoder'] if
+                                                            'i2c_encoder' in self.device_dict
+                                                            else None, self.device_dict['encoder']
+                                                            if 'encoder' in self.device_dict
+                                                            else None, self.device_dict['pid'])
+                elif json_item['type'] == 'four_wheel_drive':
+                    self.device_dict[json_item['type']]\
+                        .add(json_item, self.device_dict['motor'],
+                             self.device_dict['velocity_controlled_motor'])
+                else:
+                    self.device_dict[json_item['type']].add(json_item)
+        fi.close()
         logger.info("Done")
 
     def generateOutput(self):

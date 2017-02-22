@@ -12,39 +12,47 @@ class ServoList(ComponentList):
     TIER = 1
 
     def __init__(self):
-        self.list_ = []
+        self.servoDict = {}
+        self.servoList = []
 
-    def add(self, json_item, device_dict, device_type):
+    def add(self, json_item):
         servo = Servo(json_item['label'], json_item['pin'], json_item['servo_type'])
-        self.list_.append(servo)
-        return servo
+        self.servoDict[servo.label] = servo
+        self.servoList.append(servo)
+        self.servoList.sort(key=lambda x: x.label, reverse=False)
+
+    def get(self, label):
+        if label in self.servoDict:
+            return self.servoDict[label]
+        else:
+            return None
 
     def get_includes(self):
         return '#include "Servo.h"\n'
 
     def get_pins(self):
         rv = ""
-        for actuator in self.list_:
+        for actuator in self.servoList:
             rv += "const char {0:s}_pin = {1:d};\n".format(actuator.label, actuator.pin)
         rv += "\n"
         return rv
 
-    def get_constructors(self):
+    def get_constructor(self):
         rv = ""
-        for i, servo in enumerate(self.list_):
+        for i, servo in enumerate(self.servoList):
             rv += "const char {0:s}_index = {1:d};\n".format(servo.label, i)
 
-        rv += "char servo_pins[{0:d}] = {{\n".format(len(self.list_))
-        for servo in self.list_:
+        rv += "char servo_pins[{0:d}] = {{\n".format(len(self.servoList))
+        for servo in self.servoList:
             rv += ("\t{0:s}_pin,\n").format(servo.label)
         rv = rv[:-2] + "\n};\n"
 
-        rv += ("Servo servos[{0:d}];\n").format(len(self.list_))
+        rv += ("Servo servos[{0:d}];\n").format(len(self.servoList))
         return rv
 
     def get_setup(self):
         rv = ""
-        for servo in self.list_:
+        for servo in self.servoList:
             rv += "\tservos[{0:s}_index].attach({0:s}_pin);\n".format(servo.label)
         rv += "\n"
 
@@ -61,7 +69,7 @@ class ServoList(ComponentList):
     def get_command_functions(self):
         rv = "void setServo() {\n"
         rv += "\tint indexNum = cmdMessenger.readBinArg<int>();\n"
-        rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.list_))
+        rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.servoList))
         rv += "\t\tcmdMessenger.sendBinCmd(kError, kSetServo);\n"
         rv += "\t\treturn;\n"
         rv += "\t}\n"
@@ -79,7 +87,7 @@ class ServoList(ComponentList):
 
         rv += "void detachServo() {\n"
         rv += "\tint indexNum = cmdMessenger.readBinArg<int>();\n"
-        rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.list_))
+        rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.servoList))
         rv += "\t\tcmdMessenger.sendBinCmd(kError, kDetachServo);\n"
         rv += "\t\treturn;\n"
         rv += "\t}\n"
@@ -89,7 +97,7 @@ class ServoList(ComponentList):
         return rv
 
     def get_core_values(self):
-        for i, servo in enumerate(self.list_):
+        for i, servo in enumerate(self.servoList):
             config = {}
             config['index'] = i
             config['label'] = servo.label

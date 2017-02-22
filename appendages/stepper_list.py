@@ -17,23 +17,27 @@ class StepperList(ComponentList):
     TIER = 1
 
     def __init__(self):
-        self.list_ = []
+        self.stepperDict = {}
+        self.stepperList = []
 
-    def add(self, json_item, device_dict, device_type):
+    def add(self, json_item):
         stepper = Stepper(json_item['label'], json_item['steps'],
                           json_item['pin_a'], json_item['pin_b'],
                           json_item['pin_c'], json_item['pin_d'],
                           json_item['initial_speed'], json_item['angle_per_step'])
-        self.list_.append(stepper)
-        self.list_.sort(key=lambda x: x.label, reverse=False)
-        return stepper
+        self.stepperDict[json_item['label']] = stepper
+        self.stepperList.append(stepper)
+        self.stepperList.sort(key=lambda x: x.label, reverse=False)
+
+    def get(self, label):
+        return self.actuators[label]
 
     def get_includes(self):
         return '#include "Stepper.h"\n'
 
     def get_pins(self):
         rv = ""
-        for stepper in self.list_:
+        for stepper in self.stepperList:
             rv += "const char {0:s}_pin_a = {1:d};\n".format(stepper.label, stepper.pin_a)
             rv += "const char {0:s}_pin_b = {1:d};\n".format(stepper.label, stepper.pin_b)
             rv += "const char {0:s}_pin_c = {1:d};\n".format(stepper.label, stepper.pin_c)
@@ -41,13 +45,13 @@ class StepperList(ComponentList):
         rv += "\n"
         return rv
 
-    def get_constructors(self):
+    def get_constructor(self):
         rv = ""
-        for i, stepper in enumerate(self.list_):
+        for i, stepper in enumerate(self.stepperList):
             rv += "const char {0:s}_index = {1:d};\n".format(stepper.label, i)
 
-        rv += ("Stepper steppers[{0:d}] = {{\n").format(len(self.list_))
-        for stepper in self.list_:
+        rv += ("Stepper steppers[{0:d}] = {{\n").format(len(self.stepperList))
+        for stepper in self.stepperList:
             rv += ("\tStepper({0:d}, {1:s}_pin_a, {1:s}_pin_b, {1:s}_pin_c, {1:s}_pin_d), ")\
                     .format(stepper.steps, stepper.label)
         rv = rv[:-2] + "\n};\n"
@@ -55,13 +59,13 @@ class StepperList(ComponentList):
 
     def get_setup(self):
         rv = ""
-        for stepper in self.list_:
+        for stepper in self.stepperList:
             rv += "\tpinMode({0:s}_pin_a, OUTPUT);\n".format(stepper.label)
             rv += "\tpinMode({0:s}_pin_b, OUTPUT);\n".format(stepper.label)
             rv += "\tpinMode({0:s}_pin_c, OUTPUT);\n".format(stepper.label)
             rv += "\tpinMode({0:s}_pin_d, OUTPUT);\n".format(stepper.label)
 
-        for stepper in self.list_:
+        for stepper in self.stepperList:
             rv += ("\tsteppers[{0:s}_index].setSpeed({1:f});\n").format(stepper.label,
                                                                         stepper.initial_speed)
         rv += "\n"
@@ -79,7 +83,7 @@ class StepperList(ComponentList):
     def get_command_functions(self):
         rv = "void setStepperSpeed() {\n"
         rv += "\tint indexNum = cmdMessenger.readBinArg<int>();\n"
-        rv += "\tif(!cmdMessenger.isArgOk() ||indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.list_))
+        rv += "\tif(!cmdMessenger.isArgOk() ||indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.stepperList))
         rv += "\t\tcmdMessenger.sendBinCmd(kError, kSetStepperSpeed);\n"
         rv += "\t\treturn;\n"
         rv += "\t}\n"
@@ -94,7 +98,7 @@ class StepperList(ComponentList):
 
         rv += "void stepStepper() {\n"
         rv += "\tint indexNum = cmdMessenger.readBinArg<int>();\n"
-        rv += "\tif(indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.list_))
+        rv += "\tif(indexNum < 0 || indexNum > {0:d}) {{\n".format(len(self.stepperList))
         rv += "\t\tcmdMessenger.sendBinCmd(kError, kStepStepper);\n"
         rv += "\t\treturn;\n"
         rv += "\t}\n"
@@ -109,7 +113,7 @@ class StepperList(ComponentList):
         return rv
 
     def get_core_values(self):
-        for i, stepper in enumerate(self.list_):
+        for i, stepper in enumerate(self.stepperList):
             config = {}
             config['index'] = i
             config['label'] = stepper.label

@@ -13,31 +13,31 @@ class LineSensorArrayList(ComponentList):
     TIER = 1
 
     def __init__(self):
-        self.digital_list = []
-        self.analog_list = []
+        self.digital_sensor_list = []
+        self.analog_sensor_list = []
 
-    def add(self, json_item, device_dict, device_type):
+    def add(self, json_item):
         if json_item['digital']:
-            lsa = LineSensorArray(json_item['label'], json_item['pin_list'],
-                                  json_item['timeout'], json_item['emitter_pin'])
-            self.digital_list.append(lsa)
-            return lsa
+            self.digital_sensor_list.append(LineSensorArray(json_item['label'],
+                                                            json_item['pin_list'],
+                                                            json_item['timeout'],
+                                                            json_item['emitter_pin']))
         else:
-            lsa = LineSensorArray(json_item['label'], json_item['pin_list'],
-                                  json_item['num_samples'], json_item['emitter_pin'])
-            self.analog_list.append(lsa)
-            return lsa
+            self.analog_sensor_list.append(LineSensorArray(json_item['label'],
+                                                           json_item['pin_list'],
+                                                           json_item['num_samples'],
+                                                           json_item['emitter_pin']))
 
     def get_includes(self):
         return '#include "QTRSensors.h"\n'
 
-    def get_constructors(self):
+    def get_constructor(self):
         rv = ""
-        if len(self.digital_list) > 0:
-            for i, sensor in enumerate(self.digital_list):
+        if len(self.digital_sensor_list) > 0:
+            for i, sensor in enumerate(self.digital_sensor_list):
                 rv += "const char {0:s}_index = {1:d};\n".format(sensor.label, i)
-            rv += "QTRSensorsRC digital_linsensor_arrays[{0:d}] = {{\n".format(len(self.digital_list))
-            for sensor in self.digital_list:
+            rv += "QTRSensorsRC digital_linsensor_arrays[{0:d}] = {{\n".format(len(self.digital_sensor_list))
+            for sensor in self.digital_sensor_list:
                 rv += "\tQTRSensorsRC((unsigned char[]){"
                 for pin in sensor.pin_list:
                     rv += "{0:d}, ".format(pin)
@@ -45,16 +45,16 @@ class LineSensorArrayList(ComponentList):
                 rv += "}}, {0:d}, {1:d}, {2:d}),\n".format(len(sensor.pin_list), sensor.extra, sensor.emitter_pin)
             rv = rv[:-2] + "\n};\n"
 
-            rv += "unsigned int digital_linesensor_values_arrays[{0:d}][] = {{\n".format(len(self.digital_list))
-            for sensor in self.digital_list:
+            rv += "unsigned int digital_linesensor_values_arrays[{0:d}][] = {{\n".format(len(self.digital_sensor_list))
+            for sensor in self.digital_sensor_list:
                 rv += "unsigned int [{1:d}],\n".format(sensor.label, len(sensor.pin_list))
             rv = rv[:-2] + "\n};\n"
 
-        if len(self.analog_list) > 0:
-            for i, sensor in enumerate(self.analog_list):
+        if len(self.analog_sensor_list) > 0:
+            for i, sensor in enumerate(self.analog_sensor_list):
                 rv += "const char {0:s}_index = {1:d};\n".format(sensor.label, i)
-                rv += "QTRSensorsAnalog analog_linsensor_arrays[{0:d}] = {\n".format(len(self.digital_list))
-            for sensor in self.analog_list:
+                rv += "QTRSensorsAnalog analog_linsensor_arrays[{0:d}] = {\n".format(len(self.digital_sensor_list))
+            for sensor in self.analog_sensor_list:
                 rv += "\tQTRSensorsAnalog((unsigned char[]){"
                 for pin in sensor.pin_list:
                     rv += "{0:d}, ".format(pin)
@@ -62,21 +62,21 @@ class LineSensorArrayList(ComponentList):
                 rv += "}}, {0:d}, {1:d}, {2:d}),\n".format(len(sensor.pin_list), sensor.extra, sensor.emitter_pin)
             rv = rv[:-2] + "\n};\n"
 
-            rv += "unsigned int analog_linesensor_values_arrays[{0:d}][] = {{\n".format(len(self.analog_list))
-            for sensor in self.analog_list:
+            rv += "unsigned int analog_linesensor_values_arrays[{0:d}][] = {{\n".format(len(self.analog_sensor_list))
+            for sensor in self.analog_sensor_list:
                 rv += "unsigned int [{1:d}],\n".format(sensor.label, len(sensor.pin_list))
             rv = rv[:-2] + "\n};\n"
         return rv
 
     def get_setup(self):
         rv = "\tfor (int i = 0; i < 400; i++) { // make the calibration take about 10 seconds\n"
-        if len(self.digital_list) > 0:
-            rv += "\t\tfor(int j = 0; j < {0:d}; j++) {{\n".format(len(self.digital_list))
+        if len(self.digital_sensor_list) > 0:
+            rv += "\t\tfor(int j = 0; j < {0:d}; j++) {{\n".format(len(self.digital_sensor_list))
             rv += "\t\t\tdigital_linesensor_arrays[j].calibrate();\n"
             rv += "\t\t}\n"
 
-        if len(self.analog_list) > 0:
-            rv += "\t\tfor(int j = 0; j < {0:d}; j++) {\n".format(len(self.analog_list))
+        if len(self.analog_sensor_list) > 0:
+            rv += "\t\tfor(int j = 0; j < {0:d}; j++) {\n".format(len(self.analog_sensor_list))
             rv += "\t\t\tanalog_linesensor_arrays[j].calibrate();\n"
             rv += "\t}\n"
         rv += "\t}\n"
@@ -84,29 +84,29 @@ class LineSensorArrayList(ComponentList):
 
         def get_commands(self):
             rv = ""
-            if(len(self.digital_list) > 0):
+            if(len(self.digital_sensor_list) > 0):
                 rv += "\tkReadDigitalLineSensorArray,\n"
                 rv += "\tkReadDigitalLineSensorArrayResult,\n"
-            if(len(self.analog_list) > 0):
+            if(len(self.analog_sensor_list) > 0):
                 rv += "\tkReadAnalogLineSensorArray,\n"
                 rv += "\tkReadAnalogLineSensorArrayResult,\n"
             return rv
 
         def get_command_attaches(self):
             rv = ""
-            if(len(self.digital_list) > 0):
+            if(len(self.digital_sensor_list) > 0):
                 rv += "\tcmdMessenger.attach(kReadDigitalLineSensorArray, readDigitalLineSensorArray);\n"
-            if(len(self.analog_list) > 0):
+            if(len(self.analog_sensor_list) > 0):
                 rv += "\tcmdMessenger.attach(kReadAnalogLineSensorArray, readAnalogLineSensorArray);\n"
             return rv
 
         def get_command_functions(self):
             rv = ""
-            if(len(self.digital_list) > 0):
+            if(len(self.digital_sensor_list) > 0):
                 rv += "void readDigitalLineSensorArray() {\n"
                 rv += "\tint indexNum = cmdMessenger.readBinArg<int>();\n"
                 rv += "\tif(!cmdMessenger.isArgOk() || indexNum < 0 || indexNum > {0:d}) {{\n"\
-                    .format(len(self.digital_list))
+                    .format(len(self.digital_sensor_list))
                 rv += "\t\tcmdMessenger.sendBinCmd(kError, kReadDigitalLineSensorArray);\n"
                 rv += "\t\treturn;\n"
                 rv += "\t}\n"
@@ -119,11 +119,11 @@ class LineSensorArrayList(ComponentList):
                 rv += "\t\tcmdMessenger.sendBinCmd(kError, kReadDigitalLineSensorArray);\n"
                 rv += "\t}\n"
                 rv += "}\n\n"
-            if(len(self.analog_list) > 0):
+            if(len(self.analog_sensor_list) > 0):
                 rv += "void readAnalogLineSensorArray() {\n"
                 rv += "\tint indexNum = cmdMessenger.readBinArg<int>();\n"
                 rv += "\tif(!cmdMessenger.isArgOk() ||indexNum < 0 || indexNum > {0:d}) {{\n"\
-                    .format(len(self.analog_list))
+                    .format(len(self.analog_sensor_list))
                 rv += "\t\tcmdMessenger.sendBinCmd(kError, kReadAnalogLineSensorArray);\n"
                 rv += "\t\treturn;\n"
                 rv += "\t}\n"
@@ -139,14 +139,14 @@ class LineSensorArrayList(ComponentList):
             return rv
 
     def get_core_values(self):
-        for i, linesensor in enumerate(self.digital_list):
+        for i, linesensor in enumerate(self.digital_sensor_list):
             a = {}
             a['index'] = i
             a['label'] = linesensor['label']
             a['type'] = "Line Sensor Array"
             a['digital'] = True
             yield a
-        for i, linesensor in enumerate(self.analog_list):
+        for i, linesensor in enumerate(self.analog_sensor_list):
             a = {}
             a['index'] = i
             a['label'] = linesensor['label']
