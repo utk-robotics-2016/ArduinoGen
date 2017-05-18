@@ -1,0 +1,3 @@
+[submodule "appendages"]
+	path = appendages
+	url = https://github.com/utk-robotics-2017/appendages.git

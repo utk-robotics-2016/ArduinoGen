@@ -1,0 +1,85 @@
+{
+    "appendages": [
+        {
+            "label": "encoder",
+            "index": 0,
+            "type": "Encoder",
+            "ticks_per_revolution ": "400"
+        },
+        {
+            "label": "encoder2",
+            "index": 1,
+            "type": "Encoder",
+            "ticks_per_revolution ": "400"
+        },
+        {
+            "label": "switch",
+            "index": 0,
+            "type": "DigitalInput"
+        },
+        {
+            "label": "switch_pullup",
+            "index": 1,
+            "type": "DigitalInput"
+        },
+        {
+            "label": "led",
+            "index": 0,
+            "type": "DigitalOutput"
+        },
+        {
+            "label": "lcd",
+            "index": 0,
+            "type": "Lcd"
+        },
+        {
+            "label": "servo",
+            "index": 0,
+            "type": "Servo"
+        },
+        {
+            "label": "a_out",
+            "index": 0,
+            "type": "AnalogOutput"
+        },
+        {
+            "label": "ultrasonic",
+            "index": 0,
+            "type": "Ultrasonic"
+        },
+        {
+            "label": "magnetometer",
+            "index": 0,
+            "type": "Magnetometer"
+        }
+    ],
+    "commands": {
+        "kAcknowledge": 0,
+        "kError": 1,
+        "kUnknown": 2,
+        "kSetLed": 3,
+        "kPing": 4,
+        "kPingResult": 5,
+        "kPong": 6,
+        "kReadEncoder": 7,
+        "kReadEncoderResult": 8,
+        "kZeroEncoder": 9,
+        "kReadDigitalInput": 10,
+        "kReadDigitalInputResult": 11,
+        "kWriteDigitalOutput": 12,
+        "kPrintLCD": 13,
+        "kClearLCD": 14,
+        "kSetCursorLCD": 15,
+        "kSetServo": 16,
+        "kDetachServo": 17,
+        "kWriteAnalogOutput": 18,
+        "kReadUltrasonic": 19,
+        "kReadUltrasonicResult": 20,
+        "kReadX": 21,
+        "kReadXResult": 22,
+        "kReadY": 23,
+        "kReadYResult": 24,
+        "kReadZ": 25,
+        "kReadZResult": 26
+    }
+}
